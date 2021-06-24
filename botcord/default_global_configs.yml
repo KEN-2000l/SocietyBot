@@ -1,0 +1,38 @@
+# Global Config file
+# YAML format
+# Configs independent of guilds
+
+
+bot:
+    prefix: '-BotCord ' # prefix that works everywhere
+    reply_to_mentions: true # whether mentioning the bot is a valid prefix
+    message_cache: 10000
+    intents: all # todo: changed intents based on this setting
+    extension_name: 'extensions'
+
+permissions:
+    owners:
+        - ~
+
+    admins:
+        - ~
+
+log_channels:
+    debug: ~
+    error: ~
+
+    message_create: ~
+    message_delete: ~
+    message_update: ~
+
+    reaction_add: ~
+    reaction_remove: ~
+
+    channel_create: ~
+    channel_delete: ~
+    channel_update: ~
+    pins_update: ~
+
+    intergrations_update: ~
+    webhooks_update: ~
+    # etc

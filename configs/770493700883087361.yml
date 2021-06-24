@@ -1,0 +1,8 @@
+# Guild-specific Config file
+
+guild:
+    id: 770493700883087361
+    invite: ~
+
+bot:
+    prefix: '*'

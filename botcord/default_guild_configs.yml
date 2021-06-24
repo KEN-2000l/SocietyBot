@@ -1,0 +1,8 @@
+# Guild-specific Config file
+
+guild:
+    id: ~
+    invite: ~
+
+bot:
+    prefix: '*'
