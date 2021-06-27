@@ -1,103 +1,122 @@
 import string
 
 import discord
+from discord import Member, Guild, Role
 from discord.ext import commands
-from discord.ext.commands.core import Command
-from typing import Optional
+from discord.ext.commands import Context, BucketType
+from discord.ext.commands.core import Cog, Group, Command
+from typing import Optional, Union
 
 
-def check_hex(value):
-    if len(value) == 6:
-        if not all(x in string.hexdigits for x in value):
-            return None
-    else:
+def int_hex(value):
+    value = value.lstrip('#')
+    if not (len(value) == 6 and all(x in string.hexdigits for x in value)):
         return None
 
     return int(value, 16)
 
 
-@commands.group()
-@commands.cooldown(1, 3600, commands.BucketType.user)
-async def colorrole(ctx):
+def croles(roleable: Union[Member, Guild]):
+    roles: list[Role] = roleable.roles
+    for role in roles:
+        color_int = int_hex(role.name.lstrip('cr-'))
+        if not (role.name.startswith('cr-') and
+                color_int is not None and
+                role.color.value == color_int and
+                role.permissions.value == 0):
+            continue
+
+        yield role
+
+
+async def remove_croles(ctx: Context, member: Member):
+    cleaned = False
+    for role in croles(member):
+        await member.remove_roles(role)
+        await ctx.reply(f'Removed color role `{role.name.lstrip("cr-")}` from {member.mention}.')
+        cleaned = True
+
+    if not cleaned:
+        await ctx.reply('No color roles removed.')
+
+
+@commands.group(aliases=['cr', 'crole'])
+async def colorrole(ctx: Context):
     if not ctx.invoked_subcommand:
         return
 
 
-@colorrole.command()
-async def remove(ctx, *extra):
-    if extra:
-        return
-
-    if not ctx.guild:
-        return
-
-    roles = ctx.author.roles
-    for role in roles:
-        if not role.name.startswith('cr-'):
-            continue
-        color = check_hex(role.name.lstrip('cr-'))
-        if not color:
-            continue
-        if not role.permissions.value == 0:
-            continue
-        if not role.color.value == color:
-            continue
-
-        await ctx.author.remove_roles(role)
-        await ctx.reply(f'Removed color role `{role.name.lstrip("cr-")}` from {ctx.author.mention}.')
-
-
-@colorrole.command(name='set')
-async def set_(ctx: discord.ext.commands.Context, value: str, *extra):
-    if extra:
-        return
-
-    tvalue = value.lower()
-    value = check_hex(value)
-    if value is None:
-        return
-    color = discord.Color(value)
-
-    guild: Optional[discord.Guild] = ctx.guild
+@colorrole.command(name='set', aliases=['add'])
+@commands.cooldown(1, 3600, BucketType.member)
+async def set_(ctx: Context, value: str):
+    guild: Optional[Guild] = ctx.guild
     if not guild:
         return
 
-    await remove(ctx)
+    value = value.lstrip('#').lower()
+    int_value = int_hex(value)
+    if int_value is None:
+        return
 
-    roles = guild.roles
-    for role in roles:
-        if not role.name.startswith('cr-'):
-            continue
-        name = check_hex(role.name.lstrip('cr-'))
-        if not name:
-            continue
-        if color.value == role.color.value == name:
-            if not role.permissions.value == 0:
-                continue
-            top_pos = ctx.me.roles[-1].position
-            await role.edit(position=top_pos - 1)
-            await ctx.author.add_roles(role, atomic=True)
-            await ctx.reply(f'Successfully added color-role of `{tvalue}` to {ctx.author.mention}.')
-            return
+    await ctx.author.remove_roles(*croles(ctx.author))  # Clear previous colors before setting new ones
 
-    crole = await guild.create_role(name=f'cr-{tvalue}', color=color)
+    correct_role = None
+    for role in croles(guild):
+        if role.color.value == int_value:
+            correct_role = role
+            break
+    if not correct_role:
+        correct_role = await guild.create_role(name=f'cr-{value}', color=discord.Color(int_value))
+
+    if correct_role in ctx.author.roles:
+        await ctx.reply(f'You already have corresponding color role of `{value}`.')
+        return
+
     top_pos = ctx.me.roles[-1].position
-    await crole.edit(position=top_pos-1)
-    await ctx.author.add_roles(crole, atomic=True)
-    await ctx.reply(f'Successfully added color-role of `{tvalue}` {ctx.author.mention}')
+    await correct_role.edit(position=top_pos - 1)
+    await ctx.author.add_roles(correct_role, atomic=True)
+    await ctx.reply(f'Successfully added color-role of `{value}` to {ctx.author.mention}.')
+
+
+@colorrole.command(aliases=['clear', 'reset'])
+async def remove(ctx: Context):
+    if not ctx.guild:
+        return
+
+    await remove_croles(ctx, ctx.author)
 
 
 @colorrole.command()
 @commands.has_permissions(administrator=True)
-async def revoke(ctx, user: Optional[discord.Member] = None):
-    if user is None:
+async def revoke(ctx: Context, member: Optional[Member] = None):
+    if member is None:
         await ctx.reply('User not found.')
         return
-    ctx.author = user
-    await remove(ctx)
+
+    await remove_croles(ctx, member)
+
+
+@colorrole.command(aliases=['clean'])
+async def cleanroles(ctx: Context):
+    guild: Optional[Guild] = ctx.guild
+    if not guild:
+        return
+
+    cleaned = False
+    for role in croles(guild):
+        if not role.members:
+            await role.delete()
+            await ctx.reply(f'Deleted unused color role `{role.name.lstrip("cr-")}`.')
+            cleaned = True
+
+    if not cleaned:
+        await ctx.reply('No roles where cleaned; all are used.')
 
 
 def setup(bot):
     for attr in globals().values():
-        if isinstance(attr, Command):
-            bot.add_command(attr)
+        if isinstance(attr, (Group, Command)):
+            if not attr.parents:
+                bot.add_command(attr)
+        if isinstance(attr, Cog):
+            bot.add_cog(attr)

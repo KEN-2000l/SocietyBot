@@ -1,5 +1,5 @@
 from discord.ext import commands
-from discord.ext.commands.core import Command
+from discord.ext.commands.core import Cog, Group, Command
 from discord import Webhook, User
 from typing import List, Optional
 
@@ -58,5 +58,8 @@ async def cleanhooks(ctx, *args):
 
 def setup(bot):
     for attr in globals().values():
-        if isinstance(attr, Command):
-            bot.add_command(attr)
+        if isinstance(attr, (Group, Command)):
+            if not attr.parents:
+                bot.add_command(attr)
+        if isinstance(attr, Cog):
+            bot.add_cog(attr)
