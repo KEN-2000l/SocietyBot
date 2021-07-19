@@ -1,6 +1,6 @@
 from discord.utils import get as _get, find as _find
 
-from .functions import to_int
+from botcord.functions import to_int
 
 
 async def role(string, guild):

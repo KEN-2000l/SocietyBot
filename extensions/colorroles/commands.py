@@ -2,6 +2,7 @@ import string
 
 import discord
 from discord import Member, Guild, Role
+from discord.errors import Forbidden
 from discord.ext import commands
 from discord.ext.commands import Context, BucketType
 from discord.ext.commands.core import Cog, Group, Command
@@ -105,9 +106,12 @@ async def cleanroles(ctx: Context):
     cleaned = False
     for role in croles(guild):
         if not role.members:
-            await role.delete()
-            await ctx.reply(f'Deleted unused color role `{role.name.lstrip("cr-")}`.')
-            cleaned = True
+            try:
+                await role.delete()
+                await ctx.reply(f'Deleted unused color role `{role.name.lstrip("cr-")}`.')
+                cleaned = True
+            except Forbidden:
+                await ctx.reply(f'Failed to delete unused color role `{role.name.lstrip("cr-")}`: No Permissions.')
 
     if not cleaned:
         await ctx.reply('No roles where cleaned; all are used.')

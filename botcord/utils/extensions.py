@@ -5,6 +5,7 @@ import pkgutil
 
 def get_all_extensions_from(package):
     """"Only parameter should be reference to a package containing desired extensions"""
+
     def on_error(name):
         raise ImportError(name=name)
 
@@ -12,12 +13,10 @@ def get_all_extensions_from(package):
         if module.name.rpartition('.')[-1].startswith("_"):
             continue
 
-        if module.ispkg:
-            imported = importlib.import_module(module.name)
-            if not inspect.isfunction(getattr(imported, "setup", None)):
-                continue
+        imported = importlib.import_module(module.name)
+        if not inspect.isfunction(getattr(imported, "setup", None)):
+            continue
 
         yield module.name
-
 
 # End

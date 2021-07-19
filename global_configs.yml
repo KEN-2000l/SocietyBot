@@ -11,7 +11,7 @@ bot:
     reply_to_mentions: true # whether mentioning the bot is a valid prefix
     message_cache: 100000
     intents: all # todo: changed intents based on this setting
-    extension_name: 'extensions'
+    extension_dir: 'extensions'
 
 permissions:
     owners:

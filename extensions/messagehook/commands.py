@@ -1,6 +1,6 @@
 from discord.ext import commands
 from discord.ext.commands.core import Cog, Group, Command
-from discord import Webhook, User
+from discord import Webhook, User, HTTPException
 from typing import List, Optional
 
 
@@ -17,25 +17,31 @@ async def resend(ctx, *, text=None):
 
 @commands.command()
 async def sendas(ctx, user: Optional[User] = None, *, text=None):
-    if (user is None) or (text is None):
+    if (user is None) or ((text is None) and (ctx.message.attachments is None)):
         return
+
     attachments = []
     if ctx.message.attachments:
         attachments = [await atm.to_file() for atm in ctx.message.attachments]
 
     hooks: Optional[List[Webhook]] = await ctx.channel.webhooks()
+    valid_hook: Optional[Webhook] = None
     for hook in hooks:
-        if not hook.token:
-            print('asdf')
-            hooks.remove(hook)
+        if hook.token is not None:
+            valid_hook = hook
+            break
+    try:
+        if not valid_hook:
+            valid_hook = await ctx.channel.create_webhook(name='MessageHook')
 
-    if hooks:
-        hook = hooks[0]
-    else:
-        hook: Webhook = await ctx.channel.create_webhook(name='MessageHook')
+        await valid_hook.send(content=text, username=user.name, avatar_url=user.avatar_url, files=attachments)
 
-    print(hook.token)
-    await hook.send(content=text, username=user.name, avatar_url=user.avatar_url, files=attachments)
+    except HTTPException as error:
+        if error.code == 30007:
+            await ctx.reply('All existing webhooks are unusable (please delete). Failed to create new one: Maximum number of webhooks in this channel reached (10).')
+        else:
+            await ctx.reply('Failed to send message.')
+            print(error)
 
 
 @commands.command()
@@ -50,7 +56,7 @@ async def cleanhooks(ctx, *args):
         return
     deleted = 0
     for hook in hooks:
-        if hook.name == 'MessageHook':
+        if (hook.name == 'MessageHook') or (hook.user == ctx.bot.user):
             await hook.delete()
             deleted += 1
     await ctx.reply(f'Deleted {deleted} hook{"s" if deleted > 1 else ""}.')

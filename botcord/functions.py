@@ -30,8 +30,15 @@ def current_time():
     return datetime.now().strftime("%H:%M:%S")
 
 
-def log(message, tag="Main", sep="\n", time=True):
-    __stdout__.write(f"{('[' + current_time() + '] ') if time else ''}{('[' + tag + ']: ') if tag else ''}{message}{sep}")
+def log(message: str, tag="Main", end="\n", time=True):
+    """Logs messages to stdout.
+    ``[timestamp] [tag] message (ending)``
+
+    :param str message: message to log
+    :param str tag: tag, defaults to "Main"
+    :param str end: string to append to the end of the output, defaults to newline (\n)
+    :param bool time: whether to output a timestamp"""
+    __stdout__.write(f"{('[' + current_time() + '] ') if time else ''}{('[' + tag + ']: ') if tag else ''}{message}{end}")
 
 
 def to_int(string: str) -> Optional[int]:

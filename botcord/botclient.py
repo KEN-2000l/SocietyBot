@@ -4,6 +4,7 @@ import importlib
 import os
 
 import discord
+from discord import HTTPException
 from discord.ext import commands
 from discord.ext.commands.errors import CommandNotFound, DisabledCommand, CheckFailure, CommandOnCooldown, UserInputError
 
@@ -25,7 +26,7 @@ class BotClient(commands.Bot):
         self.guild_configs = guild_configs if isinstance(guild_configs, Iterable) else tuple()
         self.prefix = global_configs['bot']['prefix']
         self.guild_prefixes = guild_prefixes if isinstance(guild_prefixes, Iterable) else tuple()
-        exts = importlib.import_module(self.configs['bot']['extension_name'], os.getcwd())
+        exts = importlib.import_module(self.configs['bot']['extension_dir'], os.getcwd())
         self.load_extensions(exts)
 
     @staticmethod
@@ -186,15 +187,17 @@ class BotClient(commands.Bot):
 
     async def on_command_error(self, context, exception):
         if isinstance(exception, (CommandNotFound, DisabledCommand, CheckFailure)) or (context.command is None):
-            return
-        if isinstance(exception, CommandOnCooldown):
-            await context.reply('Command on cooldown you fucktard.')
-            return
-        if isinstance(exception, UserInputError):
+            pass
+        elif isinstance(exception, CommandOnCooldown):
+            await context.reply(f'Command is on cooldown. Please try again in {exception.retry_after} seconds.')
+        elif isinstance(exception, UserInputError):
             await context.reply('Invalid inputs.')
-            return
+        else:
+            await super().on_command_error(context, exception)
 
-        await super().on_command_error(context, exception)
+        if isinstance(exception, HTTPException):
+            log(f'An API Exception has occured ({exception.code}): {exception.text}', tag='Error')
+            context.reply(f'There was an error executing the command. (API Error code: {exception.code})')
 
     async def on_command_completion(self, context):
         pass
