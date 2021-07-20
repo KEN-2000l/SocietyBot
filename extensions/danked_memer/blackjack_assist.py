@@ -1,15 +1,14 @@
 import re
-from typing import Optional, Any
 
-from discord.ext import commands
-from discord.ext.commands import Group, Command, Cog
 from discord import Message
+
+from botcord.functions import log
 
 
 def find_cards(string: str) -> tuple[list, int, bool]:
     results = re.findall('(?<=\[`. )(\d|10|J|Q|K|A)(?=`\])', string)
     if not results:
-        print('error in bj card parsing')
+        log(f'Error in bj card parsing: No card found: \n{string}', tag='Error')
         return [], 0, False
 
     soft = False
@@ -26,7 +25,7 @@ def find_cards(string: str) -> tuple[list, int, bool]:
             results[i] = int(results[i])
             total += int(results[i])
         else:
-            print('error in bj card parsing')
+            log(f'Error in bj card parsing: Unknown card {results[i]}', tag='Error')
 
     return results, total, soft
 
@@ -62,15 +61,8 @@ def best_move(player: int, soft: bool, dealer: int) -> str:
 
 
 def setup(bot):
-    for attr in globals().values():
-        if isinstance(attr, (Group, Command)):
-            if not attr.parents:
-                bot.add_command(attr)
-        if isinstance(attr, Cog):
-            bot.add_cog(attr)
-
-    @bot.listen()
-    async def on_message(message: Message):
+    @bot.listen('on_message')
+    async def bj_assist(message: Message):
         if message.author.id == 270904126974590976 and ('Type `h` to **hit**, type `s` to **stand**, or type `e` to **end** the game' in message.content):
             embed = message.embeds[0].to_dict()
 
@@ -82,12 +74,7 @@ def setup(bot):
             memer_card = memer_card[0]
             await message.channel.send(f'Your total: **`{"A+" if user_soft else ""}{user_total}`** | Dealer top card: **`{memer_card}`** \nYou should: **{best_move(user_total, user_soft, memer_card)}**')
 
-# **You tied with your opponent!**
-# Your wallet hasn't changed! You have **⏣ 27,554** still.
-# KEN_2000
-# Cards - **[`♥ 4`](https://google.com)  [`♣ 4`](https://google.com)  [`♣ 5`](https://google.com)  [`♥ 5`](https://google.com)**
-# Total - `18`
-# Dank Memer
-# Cards - **[`♠ 8`](https://google.com)  [`♦ Q`](https://google.com)**
-# Total - `18`
-# Percent Won: 0%
+    @bot.listen('on_message')
+    async def job_assist(message: Message):
+        # todo
+        pass
