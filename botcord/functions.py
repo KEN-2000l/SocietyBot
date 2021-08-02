@@ -1,7 +1,6 @@
-import urllib.parse
 from datetime import datetime
-from typing import Optional
 from sys import __stdout__
+from typing import Optional, Iterable
 
 
 def removeprefix(string: str, prefix) -> str:
@@ -9,7 +8,7 @@ def removeprefix(string: str, prefix) -> str:
     except it works for lower versions and can take a list of prefixes"""
     if isinstance(prefix, str):
         return string[(string.startswith(prefix) and len(prefix)):]
-    elif isinstance(prefix, (list, tuple, set)):
+    elif isinstance(prefix, Iterable):
         for i in prefix:
             string = removeprefix(string, i)
         return string
@@ -20,7 +19,7 @@ def removesuffix(string: str, suffix) -> str:
     except it works for lower versions and can take a list of suffixes"""
     if isinstance(suffix, str):
         return string[:-len(suffix)] if string.endswith(suffix) else string
-    elif isinstance(suffix, (list, tuple, set)):
+    elif isinstance(suffix, Iterable):
         for i in suffix:
             string = removesuffix(string, i)
         return string
@@ -57,10 +56,6 @@ def to_flt(string: str) -> Optional[float]:
 
 def clean_return(string: str) -> str:
     return str(string).replace("\r\n", "\n").replace("\r", "\n").replace(" \n", "\n").strip()
-
-
-async def google_search(query):
-    return f"https://www.google.com/search?q={urllib.parse.quote_plus(query)}"
 
 
 async def load_list(filepath):

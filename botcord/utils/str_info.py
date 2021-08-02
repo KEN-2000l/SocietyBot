@@ -1,5 +1,6 @@
-from discord import Spotify, Activity, Game, Streaming, CustomActivity, ActivityType
 from typing import Iterable
+
+from discord import Spotify, Activity, Game, Streaming, CustomActivity, ActivityType
 
 
 async def member_details(member):
@@ -53,19 +54,20 @@ async def activity_names(activities):
 
 
 async def badge_names(flags):
-    return '- Discord Staff \n' if flags.staff else '' + \
-           '- Discord Partner \n' if flags.partner else '' + \
-           '- Hypesquade Host \n' if flags.hypesquad else '' + \
-           '- Bug Hunter lvl1 \n' if flags.bug_hunter else '' + \
-           '- Bug Hunter lvl2 \n' if flags.bug_hunter_level_2 else '' + \
-           '- Hypesquad House: Bravery \n' if flags.hypesquad_bravery else '' + \
-           '- Hypesquad House: Brilliance \n' if flags.hypesquad_brilliance else '' + \
-           '- Hypesquad House: Balance \n' if flags.hypesquad_balance else '' + \
-           '- Early Supporter \n' if flags.early_supporter else '' + \
-           '- Team User \n' if flags.team_user else '' + \
-           '- System User \n' if flags.system else '' + \
-           '- Verified Bot \n' if flags.verified_bot else '' + \
-           '- Early Bot Developer' if flags.early_verified_bot_developer else ''
+    names = '- Discord Staff \n' if flags.staff else '' + \
+            '- Discord Partner \n' if flags.partner else '' + \
+            '- Hypesquade Host \n' if flags.hypesquad else '' + \
+            '- Bug Hunter lvl1 \n' if flags.bug_hunter else '' + \
+            '- Bug Hunter lvl2 \n' if flags.bug_hunter_level_2 else '' + \
+            '- Hypesquad House: Bravery \n' if flags.hypesquad_bravery else '' + \
+            '- Hypesquad House: Brilliance \n' if flags.hypesquad_brilliance else '' + \
+            '- Hypesquad House: Balance \n' if flags.hypesquad_balance else '' + \
+            '- Early Supporter \n' if flags.early_supporter else '' + \
+            '- Team User \n' if flags.team_user else '' + \
+            '- System User \n' if flags.system else '' + \
+            '- Verified Bot \n' if flags.verified_bot else '' + \
+            '- Early Bot Developer' if flags.early_verified_bot_developer else ''
+    return names
 
 
 async def role_names(roles):

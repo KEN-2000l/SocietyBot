@@ -1,8 +1,7 @@
-from sys import __stdout__
-from typing import Iterable, Any, Union, Hashable
-from time import time as time_now
 import importlib
 import os
+from sys import __stdout__
+from typing import Iterable, Any, Union, Hashable, Dict, List
 
 import discord
 from discord.ext import commands
@@ -15,10 +14,10 @@ from .utils.extensions import get_all_extensions_from
 
 class BotClient(commands.Bot):
     last_message: Optional[discord.Message]
-    configs: dict[Hashable, Any]
-    guild_configs: Union[dict[int, dict], tuple]
-    prefix: list[str]
-    guild_prefixes: Union[dict[int, str], tuple]
+    configs: Dict[Hashable, Any]
+    guild_configs: Union[Dict[int, dict], tuple]
+    prefix: List[str]
+    guild_prefixes: Union[Dict[int, str], tuple]
 
     def __init__(self, **options):
         global_configs, guild_configs, guild_prefixes = load_configs()
@@ -141,15 +140,15 @@ class BotClient(commands.Bot):
     async def on_member_join(self, member):
         pass
 
-    async def on_member_remove(self, member) :
+    async def on_member_remove(self, member):
         pass
 
     async def on_member_update(self, before, after):
         # custom event dispatched when a Member has just completed membership verification/screening
         if before.pending and not after.pending:
-            self.dispatch('verification_complete', after, time_now())
+            self.dispatch('verification_complete', after)
 
-    async def on_verification_complete(self, member, time):  # custom event from above
+    async def on_verification_complete(self, member):  # custom event from above
         pass
 
     async def on_user_update(self, before, after):
@@ -219,10 +218,11 @@ class BotClient(commands.Bot):
         if isinstance(exception, (CommandNotFound, DisabledCommand, CheckFailure)) or (context.command is None):
             pass
         elif isinstance(exception, CommandOnCooldown):
-            await context.reply(f'Command is on cooldown. Please try again in {exception.retry_after} seconds.')
+            await context.reply(f'Command is on cooldown. Please try again in {exception.retry_after} seconds.', delete_after=10)
         elif isinstance(exception, UserInputError):
-            await context.reply('Invalid inputs.')
+            await context.reply('Invalid inputs.', delete_after=10)
         else:
+            #  v Default command error handling v
             await super().on_command_error(context, exception)
 
         if isinstance(exception, discord.HTTPException):
