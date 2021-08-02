@@ -1,4 +1,4 @@
-from discord.utils import get as _get, find as _find
+from discord.utils import get as _get
 
 from botcord.functions import to_int
 
@@ -17,10 +17,6 @@ async def role(string, guild):
     if _role:
         return _role
 
-    _role = _find(lambda r: r.name.lower() == string.lower(), guild.roles)
-    if _role:
-        return _role
-
     return None
 
 
@@ -35,10 +31,6 @@ async def channel(string, guild):
         return _channel
 
     _channel = _get(guild.channels, name=string)
-    if _channel:
-        return _channel
-
-    _channel = _find(lambda c: c.name.lower() == string.lower(), guild.channels)
     if _channel:
         return _channel
 

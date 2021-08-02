@@ -5,4 +5,12 @@ guild:
     invite: ~
 
 bot:
-    prefix: '*'
+    prefix: ~
+
+ext:
+    adv_replies: ~
+    danked_memer: ~
+    messagehook: ~
+    reactomatic: ~
+    welcomer:
+        welcome_channel: ~

@@ -1,10 +1,10 @@
 from sys import __stdout__
-from typing import Iterable
+from typing import Iterable, Any, Union, Hashable
+from time import time as time_now
 import importlib
 import os
 
 import discord
-from discord import HTTPException
 from discord.ext import commands
 from discord.ext.commands.errors import CommandNotFound, DisabledCommand, CheckFailure, CommandOnCooldown, UserInputError
 
@@ -14,6 +14,12 @@ from .utils.extensions import get_all_extensions_from
 
 
 class BotClient(commands.Bot):
+    last_message: Optional[discord.Message]
+    configs: dict[Hashable, Any]
+    guild_configs: Union[dict[int, dict], tuple]
+    prefix: list[str]
+    guild_prefixes: Union[dict[int, str], tuple]
+
     def __init__(self, **options):
         global_configs, guild_configs, guild_prefixes = load_configs()
         prefix_check = BotClient.mentioned_or_in_prefix if global_configs['bot']['reply_to_mentions'] else BotClient.in_prefix
@@ -33,13 +39,32 @@ class BotClient(commands.Bot):
     async def in_prefix(bot, message):
         guild_id = getattr(message.guild, 'id', None)
         if (guild_id is not None) and (guild_id in bot.guild_prefixes):
-            if message.content.startswith(bot.guild_prefixes[guild_id]):
+            if bot.guild_prefixes[guild_id] and message.content.startswith(bot.guild_prefixes[guild_id]):
                 return bot.guild_prefixes[guild_id]
         return bot.prefix
 
     @staticmethod
     async def mentioned_or_in_prefix(bot, message):
         return commands.when_mentioned_or(*await BotClient.in_prefix(bot, message))(bot, message)
+
+    def load_extensions(self, package):
+        extensions = get_all_extensions_from(package)
+        for extension in extensions:
+            self.load_extension(extension)
+
+    async def guild_config(self, guild: Union[discord.Guild, int]):
+        if isinstance(guild, discord.Guild):
+            guild = guild.id
+        if guild.id in self.guild_configs:
+            return self.guild_configs[guild]
+        return None
+
+    async def ext_guild_config(self, ext: str, guild: discord.Guild):
+        if guild.id in self.guild_configs:
+            config = self.guild_configs[guild.id]
+            if ext in config['ext']:
+                return config['ext'][ext]
+        return None
 
     async def logm(self, message, tag="Main", sep="\n", channel=None):
         __stdout__.write(f"[{current_time()}] [{tag}]: {message}" + sep)
@@ -116,10 +141,15 @@ class BotClient(commands.Bot):
     async def on_member_join(self, member):
         pass
 
-    async def on_member_remove(self, member):
+    async def on_member_remove(self, member) :
         pass
 
     async def on_member_update(self, before, after):
+        # custom event dispatched when a Member has just completed membership verification/screening
+        if before.pending and not after.pending:
+            self.dispatch('verification_complete', after, time_now())
+
+    async def on_verification_complete(self, member, time):  # custom event from above
         pass
 
     async def on_user_update(self, before, after):
@@ -195,7 +225,7 @@ class BotClient(commands.Bot):
         else:
             await super().on_command_error(context, exception)
 
-        if isinstance(exception, HTTPException):
+        if isinstance(exception, discord.HTTPException):
             log(f'An API Exception has occured ({exception.code}): {exception.text}', tag='Error')
             context.reply(f'There was an error executing the command. (API Error code: {exception.code})')
 
@@ -204,10 +234,5 @@ class BotClient(commands.Bot):
 
     async def load_commands(self):
         pass
-
-    def load_extensions(self, package):
-        extensions = get_all_extensions_from(package)
-        for extension in extensions:
-            self.load_extension(extension)
 
 # End
