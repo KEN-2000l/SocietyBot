@@ -6,3 +6,7 @@ guild:
 
 bot:
     prefix: '*'
+
+ext:
+    welcomer:
+        welcome_channel: 859712351821103104

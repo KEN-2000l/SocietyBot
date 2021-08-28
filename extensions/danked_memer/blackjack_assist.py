@@ -1,15 +1,35 @@
 import re
+from typing import Union, List, Optional, Tuple, TYPE_CHECKING
+from asyncio import TimeoutError
 
 from discord import Message
+from discord.ext.commands import Cog
 
 from botcord.functions import log
 
+if TYPE_CHECKING:
+    from botcord import BotClient
 
-def parse_cards(string):
-    results = re.findall('(?<=\[`. )(\d|10|J|Q|K|A)(?=`\])', string)
+
+def is_bj_message(message: Message) -> bool:
+    if not message.author.id == 270904126974590976:
+        return False
+    if not message.embeds:
+        return False
+    try:
+        embed = message.embeds[0].to_dict()
+        if re.findall('(?<=\[`. )(\d|10|J|Q|K|A)(?=`\])', embed['fields'][0]['value']):
+            return True
+    except (KeyError, ValueError, IndexError):
+        pass
+    return False
+
+
+def parse_cards(string: str) -> List[Optional[Union[str, int]]]:
+    results: List[Union[str, int]] = re.findall('(?<=\[`. )(\d|10|J|Q|K|A)(?=`\])', string)
     if not results:
         log(f'Error in bj card parsing: No card found: \n{string}', tag='Error')
-        return [], 0, False
+        return []
 
     for i in range(len(results)):
         if results[i] in 'JQK':
@@ -24,7 +44,7 @@ def parse_cards(string):
     return results
 
 
-def sum_cards(cards: list):
+def sum_cards(cards: list) -> Tuple[int, bool]:
     total = sum(cards)
     soft = False
 
@@ -68,15 +88,42 @@ def best_move(player: int, soft: bool, dealer: int) -> str:
             return 'h'
 
 
-def setup(bot):
-    @bot.listen('on_message')
-    async def bj_assist(message: Message):
-        if message.author.id == 270904126974590976 and ('Type `h` to **hit**, type `s` to **stand**, or type `e` to **end** the game' in message.content):
-            embed = message.embeds[0].to_dict()
+async def bj_assist(message: Message, response: Message = None):
+    embed = message.embeds[0].to_dict()
 
-            user_cards = parse_cards(embed['fields'][0]['value'])
-            dealer_cards = parse_cards(embed['fields'][1]['value'])
+    user_cards = parse_cards(embed['fields'][0]['value'])
+    dealer_cards = parse_cards(embed['fields'][1]['value'])
 
-            user_total, user_soft = sum_cards(user_cards)
-            dealer_top = dealer_cards[0]
-            await message.channel.send(f'Your total: **`{"A+" + str(user_total - 11) if user_soft else user_total}`** | Dealer top card: **`{dealer_top}`** \nYou should: **{best_move(user_total, user_soft, dealer_top)}**')
+    user_total, user_soft = sum_cards(user_cards)
+    dealer_top = dealer_cards[0]
+    msg = f'Your total: **`{"A+" + str(user_total - 11) if user_soft else user_total}`** | Dealer top card: **`{dealer_top}`** \nYou should: **{best_move(user_total, user_soft, dealer_top)}**'
+    if response:
+        await response.edit(content=msg)
+        return response
+    else:
+        return await message.channel.send(msg)
+
+
+class BlackJackAssist(Cog):
+    def __init__(self, bot: 'BotClient'):
+        self.bot = bot
+
+    @Cog.listener('on_message')
+    async def new_bj_session(self, bj_msg: Message):
+        if is_bj_message(bj_msg):
+            session_id = bj_msg.id
+            assist_msg = None
+
+            def bj_message_check(_, msg):
+                return is_bj_message(msg) and msg.id == session_id
+
+            for i in range(10):
+                assist_msg = await bj_assist(bj_msg, assist_msg)
+                try:
+                    _, bj_msg = await self.bot.wait_for('message_edit', check=bj_message_check, timeout=20)
+                except TimeoutError:
+                    break
+
+
+def setup(bot: 'BotClient'):
+    bot.add_cog(BlackJackAssist(bot))

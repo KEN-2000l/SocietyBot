@@ -1,7 +1,6 @@
 from typing import List, Optional, TYPE_CHECKING
 
-from discord import Webhook, User, HTTPException, Forbidden, NotFound
-from discord import AllowedMentions
+from discord import Webhook, User, HTTPException, Forbidden, NotFound, AllowedMentions
 from discord.ext.commands import Cog, Context, command
 
 if TYPE_CHECKING:

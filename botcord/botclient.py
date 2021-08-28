@@ -1,11 +1,17 @@
 import importlib
 import os
-from sys import __stdout__
-from typing import Iterable, Any, Union, Hashable, Dict, List
+import sys
+from typing import Any, Union, Hashable, Dict, List
 
 import discord
+from aiohttp import ClientSession
 from discord.ext import commands
-from discord.ext.commands.errors import CommandNotFound, DisabledCommand, CheckFailure, CommandOnCooldown, UserInputError
+from discord.ext.commands.errors import (CommandNotFound,
+                                         DisabledCommand,
+                                         CheckFailure,
+                                         CommandOnCooldown,
+                                         UserInputError,
+                                         NoPrivateMessage)
 
 from .configs import load_configs
 from .functions import *
@@ -13,7 +19,7 @@ from .utils.extensions import get_all_extensions_from
 
 
 class BotClient(commands.Bot):
-    last_message: Optional[discord.Message]
+    latest_message: Optional[discord.Message]
     configs: Dict[Hashable, Any]
     guild_configs: Union[Dict[int, dict], tuple]
     prefix: List[str]
@@ -26,11 +32,14 @@ class BotClient(commands.Bot):
                          command_prefix=prefix_check,
                          max_messages=global_configs['bot']['message_cache'],
                          intents=discord.Intents.all())
-        self.last_message = None
+        self.latest_message = None
+        self.aiohttp_session = ClientSession(loop=self.loop)
+
         self.configs = global_configs
         self.guild_configs = guild_configs if isinstance(guild_configs, Iterable) else tuple()
         self.prefix = global_configs['bot']['prefix']
         self.guild_prefixes = guild_prefixes if isinstance(guild_prefixes, Iterable) else tuple()
+
         exts = importlib.import_module(self.configs['bot']['extension_dir'], os.getcwd())
         self.load_extensions(exts)
 
@@ -66,9 +75,9 @@ class BotClient(commands.Bot):
         return None
 
     async def logm(self, message, tag="Main", sep="\n", channel=None):
-        __stdout__.write(f"[{current_time()}] [{tag}]: {message}" + sep)
+        sys.__stdout__.write(f"[{current_time()}] [{tag}]: {message}" + sep)
         if not channel:
-            channel = self.last_message.channel
+            channel = self.latest_message.channel
         await channel.send(message)
 
     async def on_ready(self):
@@ -87,6 +96,7 @@ class BotClient(commands.Bot):
         pass
 
     async def on_message(self, message):
+        self.latest_message = message
         await super().on_message(message)
 
     async def on_message_delete(self, message):
@@ -217,14 +227,17 @@ class BotClient(commands.Bot):
     async def on_command_error(self, context, exception):
         if isinstance(exception, (CommandNotFound, DisabledCommand, CheckFailure)) or (context.command is None):
             pass
+        elif isinstance(exception, NoPrivateMessage):
+            await context.reply('This does not work in Direct Messages!', delete_after=10)
         elif isinstance(exception, CommandOnCooldown):
             await context.reply(f'Command is on cooldown. Please try again in {exception.retry_after} seconds.', delete_after=10)
         elif isinstance(exception, UserInputError):
             await context.reply('Invalid inputs.', delete_after=10)
         else:
-            #  v Default command error handling v
+            #  Default command error handling
             await super().on_command_error(context, exception)
 
+        #  Additional logging for HTTP (networking) errors
         if isinstance(exception, discord.HTTPException):
             log(f'An API Exception has occured ({exception.code}): {exception.text}', tag='Error')
             context.reply(f'There was an error executing the command. (API Error code: {exception.code})')
@@ -234,5 +247,11 @@ class BotClient(commands.Bot):
 
     async def load_commands(self):
         pass
+
+    async def close(self):
+        await self.aiohttp_session.close()
+        #  quick hack-fix to stop annoying RuntimeError from popping up when asyncio event loop closes
+        sys.stderr = None
+        await super().close()
 
 # End
