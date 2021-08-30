@@ -68,4 +68,18 @@ async def save_list(filepath, array):
         for item in array:
             file.write(clean_return(item).replace("\n", " ") + "\n")
 
+
+def batch(msg: str, d="\n", length=2000):
+    splitted = [e + d for e in msg.split(d) if e]
+    result = ""
+    while splitted:
+        if len(result) + len(splitted[0]) <= length:
+            result += splitted.pop(0)
+        elif result:
+            yield result
+            result = ""
+        else:
+            yield splitted.pop(0)
+    yield result
+
 # End
