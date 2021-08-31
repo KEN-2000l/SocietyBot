@@ -23,7 +23,7 @@ class NerdUtils(Cog):
         results = await execute_queries(usernames, aiohttp_session=self.bot.aiohttp_session)
         msg = ''
         for result in results:
-            msg += f'`{result.query}` on **`{result.platform}`**: `{result.message}` (Success: `{result.success}`, Valid: `{result.valid}`, Available: `{result.available}`)\n'
+            msg += f'`{result.query}` on **`{result.platform}`**: `{result.message if result.message else "No response"}` (Success: `{result.success}`, Valid: `{result.valid}`, **Available: `{result.available}`**)\n'
         for i in batch(msg):
             await ctx.reply(i)
         await ctx.reply('Finished Scan.')

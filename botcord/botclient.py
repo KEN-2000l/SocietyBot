@@ -1,6 +1,7 @@
 import importlib
 import os
 import sys
+import asyncio
 from typing import Any, Union, Hashable, Dict, List
 
 import discord
@@ -98,12 +99,13 @@ class BotClient(commands.Bot):
     async def on_message(self, message):
         self.latest_message = message
         await super().on_message(message)
+        self.dispatch('message_all', message)
 
     async def on_message_delete(self, message):
         pass
 
     async def on_message_edit(self, before, after):
-        pass
+        self.dispatch('message_all', after)
 
     async def on_reaction_add(self, reaction, user):
         pass
@@ -248,10 +250,21 @@ class BotClient(commands.Bot):
     async def load_commands(self):
         pass
 
+    def run(self, *args, **kwargs):
+        # To avoid 'Event loop is closed' RuntimeError upon shutdown due to compatibility issue with aiohttp
+        if sys.platform.startswith("win"):
+            try:
+                # noinspection PyUnresolvedReferences
+                # because pycharm is stupid
+                from asyncio import WindowsSelectorEventLoopPolicy
+                if not isinstance(asyncio.get_event_loop_policy(), WindowsSelectorEventLoopPolicy):
+                    asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
+            except ImportError:
+                pass
+        super().run(*args, *kwargs)
+
     async def close(self):
         await self.aiohttp_session.close()
-        #  quick hack-fix to stop annoying RuntimeError from popping up when asyncio event loop closes
-        sys.stderr = None
         await super().close()
 
 # End
