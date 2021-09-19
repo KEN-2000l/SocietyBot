@@ -4,35 +4,24 @@
 
 
 bot:
-    prefix: '-BotCord ' # prefix that works everywhere
-    reply_to_mentions: true # whether mentioning the bot is a valid prefix
-    message_cache: 10000
-    intents: all # todo: changed intents based on this setting
-    extension_dir: 'extensions'
+    prefix: '-BotCord '              # prefix that works everywhere
+    reply_to_mentions: true          # whether mentioning the bot is a valid prefix
+    ignore_self: false               # if true, actions from the bot itself not trigger commands
+    message_cache: 10000             # how many messages to keep in the client-side cache
+    intents: all                     # todo: changed intents based on this setting
+    extension_dir: 'extensions'      # the name of the folder (under the working directory) that contains all the extension packages
 
 permissions:
-    owners:
+    owner:
         - ~
 
-    admins:
+    admin:
+        - ~
+
+    mod:
         - ~
 
 log_channels:
     debug: ~
+    info: ~
     error: ~
-
-    message_create: ~
-    message_delete: ~
-    message_update: ~
-
-    reaction_add: ~
-    reaction_remove: ~
-
-    channel_create: ~
-    channel_delete: ~
-    channel_update: ~
-    pins_update: ~
-
-    intergrations_update: ~
-    webhooks_update: ~
-    # etc

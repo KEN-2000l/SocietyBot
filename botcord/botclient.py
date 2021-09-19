@@ -1,8 +1,7 @@
 import importlib
 import os
 import sys
-import asyncio
-from typing import Any, Union, Hashable, Dict, List
+from typing import Any, Hashable, Dict, List
 
 import discord
 from aiohttp import ClientSession
@@ -14,12 +13,13 @@ from discord.ext.commands.errors import (CommandNotFound,
                                          UserInputError,
                                          NoPrivateMessage)
 
-from .configs import load_configs
+from .configs import load_configs, save_guild_config, save_config
 from .functions import *
 from .utils.extensions import get_all_extensions_from
 
 
 class BotClient(commands.Bot):
+    initialized: bool
     latest_message: Optional[discord.Message]
     configs: Dict[Hashable, Any]
     guild_configs: Union[Dict[int, dict], tuple]
@@ -27,9 +27,14 @@ class BotClient(commands.Bot):
     guild_prefixes: Union[Dict[int, str], tuple]
 
     def __init__(self, **options):
-        global_configs, guild_configs, guild_prefixes = load_configs()
+        self.initialized = False
+        global_configs, guild_configs = load_configs()
         prefix_check = BotClient.mentioned_or_in_prefix if global_configs['bot']['reply_to_mentions'] else BotClient.in_prefix
+        self.__status = options.pop('status', None)
+        self.__activity = options.pop('activity', None)
         super().__init__(**options,
+                         activity=discord.Activity(name='...Bot Initializing...', type=0),
+                         status=discord.Status('offline'),
                          command_prefix=prefix_check,
                          max_messages=global_configs['bot']['message_cache'],
                          intents=discord.Intents.all())
@@ -37,12 +42,27 @@ class BotClient(commands.Bot):
         self.aiohttp_session = ClientSession(loop=self.loop)
 
         self.configs = global_configs
-        self.guild_configs = guild_configs if isinstance(guild_configs, Iterable) else tuple()
+        self.guild_configs = guild_configs
         self.prefix = global_configs['bot']['prefix']
-        self.guild_prefixes = guild_prefixes if isinstance(guild_prefixes, Iterable) else tuple()
+        self.guild_prefixes = {c['guild']['id']: c['bot']['prefix'] for c in self.guild_configs.values()}
 
         exts = importlib.import_module(self.configs['bot']['extension_dir'], os.getcwd())
         self.load_extensions(exts)
+
+    def load_extensions(self, package):
+        extensions = get_all_extensions_from(package)
+        for extension in extensions:
+            self.load_extension(extension)
+
+    async def _init(self) -> bool:
+        if self.initialized:
+            return False
+        await self.validate_guild_configs()
+        self.save_guild_configs()
+        await self.change_presence(activity=self.__activity, status=self.__status)
+        self.initialized = True
+        log('Bot finished Initializing')
+        return True
 
     @staticmethod
     async def in_prefix(bot, message):
@@ -56,32 +76,31 @@ class BotClient(commands.Bot):
     async def mentioned_or_in_prefix(bot, message):
         return commands.when_mentioned_or(*await BotClient.in_prefix(bot, message))(bot, message)
 
-    def load_extensions(self, package):
-        extensions = get_all_extensions_from(package)
-        for extension in extensions:
-            self.load_extension(extension)
-
-    async def guild_config(self, guild: Union[discord.Guild, int]):
+    def guild_config(self, guild: Union[discord.Guild, int]):
         if isinstance(guild, discord.Guild):
             guild = guild.id
         if guild.id in self.guild_configs:
             return self.guild_configs[guild]
-        return None
+        raise FileNotFoundError(f'No Guild configs for{guild} found.')
 
-    async def ext_guild_config(self, ext: str, guild: discord.Guild):
+    def ext_guild_config(self, ext: str, guild: discord.Guild):
         if guild.id in self.guild_configs:
             config = self.guild_configs[guild.id]
             if ext in config['ext']:
                 return config['ext'][ext]
-        return None
+        raise FileNotFoundError(f'No Extension configs for guild {guild} found.')
 
     async def logm(self, message, tag="Main", sep="\n", channel=None):
-        sys.__stdout__.write(f"[{current_time()}] [{tag}]: {message}" + sep)
+        sys.__stdout__.write(f"[{time_str()}] [{tag}]: {message}" + sep)
         if not channel:
             channel = self.latest_message.channel
-        await channel.send(message)
+        try:
+            await channel.send(message)
+        except discord.Forbidden:
+            pass
 
     async def on_ready(self):
+        await self._init()
         log(f"User Logged in as <{self.user}>", tag="Connection")
 
     async def on_connect(self):
@@ -104,7 +123,7 @@ class BotClient(commands.Bot):
     async def on_message_delete(self, message):
         pass
 
-    async def on_message_edit(self, before, after):
+    async def on_message_edit(self, _, after):
         self.dispatch('message_all', after)
 
     async def on_reaction_add(self, reaction, user):
@@ -250,21 +269,42 @@ class BotClient(commands.Bot):
     async def load_commands(self):
         pass
 
+    # noinspection SpellCheckingInspection
+    async def validate_guild_configs(self):
+        # all_exts = set(self.extensions.keys())
+        # For each guild config...
+        for guild_id in self.guild_configs.keys():
+            guild: discord.Guild = discord.utils.get(self.guilds, id=guild_id)
+            # Add section for each extension
+            # existing_exts = set(self.guild_configs[guild_id]['ext'].keys())
+            # missing = all_exts - existing_exts
+            # for ext in missing:
+            #     self.guild_configs[guild_id]['ext'][ext] = None
+
+            if guild is not None:
+                # Update guild name and invite
+                self.guild_configs[guild_id]['guild']['name'] = guild.name
+
+                perm_invites = [invite for invite in await guild.invites() if not invite.max_age and not invite.max_uses and not invite.revoked]
+                good_invites = [invite for invite in perm_invites if not invite.temporary]
+                if good_invites is None:
+                    good_invites = perm_invites
+                if good_invites:
+                    self.guild_configs[guild_id]['guild']['invite'] = good_invites[0].url
+
+    def save_guild_configs(self):
+        for guild, config in self.guild_configs.items():
+            save_guild_config(config, guild)
+
     def run(self, *args, **kwargs):
-        # To avoid 'Event loop is closed' RuntimeError upon shutdown due to compatibility issue with aiohttp
-        if sys.platform.startswith("win"):
-            try:
-                # noinspection PyUnresolvedReferences
-                # because pycharm is stupid
-                from asyncio import WindowsSelectorEventLoopPolicy
-                if not isinstance(asyncio.get_event_loop_policy(), WindowsSelectorEventLoopPolicy):
-                    asyncio.set_event_loop_policy(WindowsSelectorEventLoopPolicy())
-            except ImportError:
-                pass
         super().run(*args, *kwargs)
 
     async def close(self):
+        save_config(self.configs)
+        self.save_guild_configs()
         await self.aiohttp_session.close()
+        # Temp hack-fix to stop aiohttp throwing errors when closing
+        sys.stderr = None
         await super().close()
 
 # End

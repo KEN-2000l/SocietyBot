@@ -2,7 +2,8 @@
 
 guild:
     id: 770493700883087361
-    invite: ~
+    invite:
+    name:
 
 bot:
     prefix: '*'

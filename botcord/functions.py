@@ -1,6 +1,9 @@
 from datetime import datetime
 from sys import __stdout__
-from typing import Optional, Iterable
+from typing import Optional, Iterable, Union
+
+import re
+from discord import Message
 
 
 def removeprefix(string: str, prefix) -> str:
@@ -25,7 +28,8 @@ def removesuffix(string: str, suffix) -> str:
         return string
 
 
-def current_time():
+def time_str():
+    """returns a formatted string of current time"""
     return datetime.now().strftime("%H:%M:%S")
 
 
@@ -37,7 +41,7 @@ def log(message: str, tag="Main", end="\n", time=True):
     :param str tag: tag, defaults to "Main"
     :param str end: string to append to the end of the output, defaults to newline (\n)
     :param bool time: whether to output a timestamp"""
-    __stdout__.write(f"{('[' + current_time() + '] ') if time else ''}{('[' + tag + ']: ') if tag else ''}{message}{end}")
+    __stdout__.write(f"{('[' + time_str() + '] ') if time else ''}{('[' + tag + ']: ') if tag else ''}{message}{end}")
 
 
 def to_int(string: str) -> Optional[int]:
@@ -81,5 +85,37 @@ def batch(msg: str, d="\n", length=2000):
         else:
             yield splitted.pop(0)
     yield result
+
+
+def _contain_arg_helper(arg: Union[Message, str], check: Union[Iterable[str], str], match_case: bool = False):
+    items = [check] if not isinstance(check, Iterable) else check
+    if isinstance(arg, Message):
+        string = arg.content
+    elif isinstance(arg, str):
+        string = arg
+    else:
+        string = str(arg)
+    if not match_case:
+        string = string.lower()
+        items = [i.lower() for i in items]
+    return string, items
+
+
+def contain_any(arg: Union[Message, str], check: Union[Iterable[str], str], match_case: bool = False) -> bool:
+    string, items = _contain_arg_helper(arg, check, match_case)
+    return any(str(i) in string for i in items)
+
+
+def contain_all(arg: Union[Message, str], check: Union[Iterable[str], str], match_case: bool = False) -> bool:
+    string, items = _contain_arg_helper(arg, check, match_case)
+    return all(str(i) in string for i in items)
+
+
+def contain_word(arg: Union[Message, str], check: Union[Iterable[str], str], match_case: bool = False) -> bool:
+    string, items = _contain_arg_helper(arg, check, match_case)
+    string = f' {string} '
+    string = re.sub(r'[^\w\s]', ' ', string)
+    return any(f' {i.strip()} ' in string for i in items)
+
 
 # End
