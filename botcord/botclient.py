@@ -55,14 +55,18 @@ class BotClient(commands.Bot):
             self.load_extension(extension)
 
     async def _init(self) -> bool:
-        if self.initialized:
-            return False
-        await self.validate_guild_configs()
-        self.save_guild_configs()
-        await self.change_presence(activity=self.__activity, status=self.__status)
-        self.initialized = True
-        log('Bot finished Initializing')
-        return True
+        try:
+            if self.initialized:
+                return False
+            await self.validate_guild_configs()
+            self.save_guild_configs()
+        except Exception:
+            raise
+        finally:
+            await self.change_presence(activity=self.__activity, status=self.__status)
+            self.initialized = True
+            log('Bot finished Initializing')
+            return True
 
     @staticmethod
     async def blocked_check(ctx: commands.Context):
@@ -311,6 +315,11 @@ class BotClient(commands.Bot):
 
     # noinspection SpellCheckingInspection
     async def validate_guild_configs(self):
+        def invites(g):
+            try:
+                return g.invites()
+            except discord.Forbidden:
+                return []
         # all_exts = set(self.extensions.keys())
         # For each guild config...
         for guild_id in self.guild_configs.keys():
@@ -325,7 +334,7 @@ class BotClient(commands.Bot):
                 # Update guild name and invite
                 self.guild_configs[guild_id]['guild']['name'] = guild.name
 
-                perm_invites = [invite for invite in await guild.invites() if not invite.max_age and not invite.max_uses and not invite.revoked]
+                perm_invites = [invite for invite in await invites(guild) if not invite.max_age and not invite.max_uses and not invite.revoked]
                 good_invites = [invite for invite in perm_invites if not invite.temporary]
                 if good_invites is None:
                     good_invites = perm_invites
