@@ -65,6 +65,46 @@ class BotClient(commands.Bot):
         return True
 
     @staticmethod
+    async def blocked_check(ctx: commands.Context):
+        if ctx.cog:
+            cconf = getattr('config', ctx.cog, dict())
+            cblocked = getattr(cconf, 'blocked_users', dict())
+            if ctx.author.id in cblocked:
+                return BotClient._blocked_check_helper(ctx, cblocked, scope='c')
+
+        if ctx.guild:
+            bot: 'BotClient' = ctx.bot
+            gconf = bot.guild_config(ctx.guild)
+            gblocked = getattr(gconf, 'blocked_users', dict())
+            if ctx.author.id in gblocked:
+                return BotClient._blocked_check_helper(ctx, gblocked, scope='g')
+
+        if 1:
+            bot: 'BotClient' = ctx.bot
+            conf = bot.configs
+            blocked = getattr(conf, 'blocked_users', dict())
+            if ctx.author.id in conf['blocked_users']:
+                return BotClient._blocked_check_helper(ctx, blocked, scope='a')
+
+        return True
+
+    @staticmethod
+    def _blocked_check_helper(ctx: commands.Context, blocked_entires: list, scope='a'):
+        if scope not in ('a', 'g', 'c'):
+            raise ValueError(f'Scope parameter must be either a, g, or c, not {scope}')
+        if ctx.command.name in blocked_entires:
+            return False
+        if any(i.name in blocked_entires for i in ctx.invoked_parents):
+            return False
+        if 'ALL' in blocked_entires:
+            return False
+        if scope in ('a', 'g') and ctx.cog.qualified_name in blocked_entires:
+            return False
+        if scope == 'a' and ctx.guild in blocked_entires:
+            return False
+        return True
+
+    @staticmethod
     async def in_prefix(bot, message):
         guild_id = getattr(message.guild, 'id', None)
         if (guild_id is not None) and (guild_id in bot.guild_prefixes):
