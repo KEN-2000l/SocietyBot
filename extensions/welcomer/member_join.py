@@ -15,7 +15,7 @@ class Welcomer(Cog):
         self.bot = bot
 
     async def get_welcome_channel(self, guild):
-        if not (welcome_channel_id := (await self.bot.ext_guild_config('welcomer', guild))['welcome_channel']):
+        if not (welcome_channel_id := self.bot.ext_guild_config('welcomer', guild)['welcome_channel']):
             log(f'Could not find welcome channel ID in configuration file for guild {guild.id}')
             return None
         if not [welcome_channel := guild.get_channel(welcome_channel_id)]:
