@@ -13,7 +13,7 @@ class SocietyBot(botcord.BotClient):
 def init():
     CLIENT = SocietyBot(status=discord.Status("online"),
                         activity=discord.Activity(name="a Society | *help", type=3))
-    CLIENT.run(getenv("TOKEN"))
+    CLIENT.run(getenv("TOKEN2"))
 
 
 init()
