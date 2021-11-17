@@ -1,0 +1,13 @@
+# Guild-specific Config file
+
+guild:
+    id: 888009787810402324
+    invite: https://discord.gg/ArdRypUb3M
+    name: the hood
+
+bot:
+    prefix:
+
+ext:
+    welcomer:
+	welcome_channel: 888009787810402327
