@@ -1,7 +1,7 @@
 import datetime
 from typing import TYPE_CHECKING
 
-from discord import Member, Embed
+from discord import Member
 from discord.ext.commands import Cog
 
 from botcord.functions import log
@@ -40,7 +40,7 @@ class Welcomer(Cog):
     async def on_member_remove(self, member: Member):
         if not (welcome_channel := await self.get_welcome_channel(member.guild)):
             return
-        await welcome_channel.send(f'**`{member.name}#{member.discriminator}`** couldnt give three more fucks to stay in society.')
+        await welcome_channel.send(f'**`{member.name}#{member.discriminator}`** couldn\'t give three more fucks to stay in society.')
 
 
 def setup(bot):

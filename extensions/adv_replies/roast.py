@@ -1,10 +1,10 @@
 from random import choice
 
 from discord import Member
-from discord.ext.commands import group, Greedy, Context, check_any
+from discord.ext.commands import Context, Greedy, check_any, group
 
 from botcord.checks import guild_owner_or_perms, has_global_perms
-from botcord.exts.commands import Cog
+from botcord.ext.commands import Cog
 from botcord.functions import batch
 
 
