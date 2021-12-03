@@ -2,7 +2,7 @@ import re
 import time
 from typing import TYPE_CHECKING
 
-from discord import Embed, Message
+from discord import Embed, Forbidden, Message
 
 from botcord.ext.commands import Cog
 
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 # noinspection PyShadowingBuiltins
-def print_(*_):
+def print(*_):
     pass
 
 
@@ -50,7 +50,6 @@ class Reputation:
             self._score -= offset
         elif self._score < 0:
             self._score += offset
-        # print(f'offset of {offset} from {time.time() - self._last_time}')
         self._last_time = time.time()
         return self._score
 
@@ -92,7 +91,7 @@ class AntiSpam(Cog):
     async def process_msg(self, msg: Message):
         log = ''
         log += f'{msg.author.mention} sent [this]({msg.jump_url}) in {msg.channel.mention} \n' \
-               f'Contents: \n{msg.content} \n\n Attachments: \n{msg.attachments} \n\n'
+               f'__**Contents:**__ \n{msg.content} \n\n __**Attachments:**__ \n{msg.attachments} \n\n'
 
         tracker = self.reputations[msg.author]
 
@@ -100,8 +99,8 @@ class AntiSpam(Cog):
         non_asciis = len(msg.content) - len(msg_ascii)
         mentions = len(re.findall(r'<(:\w+:|@|#|@&)\d{18}>', msg.content))
 
-        log += f'`Non-ASCII:` `{"{:<4}".format(non_asciis)}` \n'
-        log += f'`Mentions :` `{"{:<4}".format(mentions)}` \n'
+        log += '`Non-ASCII:` `{:<4}` \n'.format(non_asciis)
+        log += '`Mentions :` `{:<4}` \n'.format(mentions)
 
         msg_len = len(msg.content)
         msg_men = len(msg.mentions) + len(msg.role_mentions)
@@ -117,43 +116,63 @@ class AntiSpam(Cog):
         scr_att = sigmoidy(msg_att, X['Msg_Att_Scl'], X['Msg_Att_Mlt'])  # Message Attachments
         scr_chr = sigmoidy(msg_chr, X['Msg_Chr_Scl'], X['Msg_Chr_Mlt'])  # Special Characters
 
-        log += f'`Msg_Len  :` `{"{:<4}".format(msg_len)}` `=>` `{"{:.4f}".format(scr_len)}` \n' \
-               f'`Msg_Men  :` `{"{:<4}".format(msg_men)}` `=>` `{"{:.4f}".format(scr_men)}` \n' \
-               f'`Msg_Att  :` `{"{:<4}".format(msg_att)}` `=>` `{"{:.4f}".format(scr_att)}` \n' \
-               f'`Msg_Chr  :` `{"{:<4}".format(msg_chr)}` `=>` `{"{:.4f}".format(scr_chr)}` \n\n'
+        log += '`Msg_Len  :` `{:<4}` `=>` `{:.4f}` \n'.format(msg_len, scr_len)
+        log += '`Msg_Men  :` `{:<4}` `=>` `{:.4f}` \n'.format(msg_men, scr_men)
+        log += '`Msg_Att  :` `{:<4}` `=>` `{:.4f}` \n'.format(msg_att, scr_att)
+        log += '`Msg_Chr  :` `{:<4}` `=>` `{:.4f}` \n'.format(msg_chr, scr_chr)
 
         raw_score = - sum((scr_len, scr_men, scr_att, scr_chr))
 
         rep_mlt = sigmoidy(abs(tracker.score), X['Rep_Grw_Scl'], X['Rep_Grw_Mlt']) + 1
         score = rep_mlt * raw_score
-        log += f'`Tot_Raw  :` `{raw_score}` \n' \
-               f'`Final    :` `{round(rep_mlt, 3)}` * `{round(raw_score, 3)}` = **`{round(score, 3)}`** \n\n'
+        log += '`Tot_Raw  :` `{:.3f}` \n'.format(raw_score)
+        log += '`Final    :` `{:.3f}` * `{:.3f}` = **`{:.3f}`** \n\n'.format(rep_mlt, raw_score, score)
 
         tracker._score += score
         log += f'`Rep_Scr  :` `{tracker._score}` \n'
 
         print(log)
 
-        # if tracker._score <= -5:
-        await self.temp_log(msg, log)
+        log_msg = await self.detail_log(msg, log)
+        if tracker._score <= -5:
+            await self.flag_log(log_msg)
+            try:
+                await msg.channel.send(f'{msg.author.mention} stop spam.')
+            except Forbidden:
+                pass
 
     # noinspection PyProtectedMember
-    async def temp_log(self, msg: Message, log: str):
+    async def detail_log(self, msg: Message, log: str):
         chl = self.bot.get_channel(914032751433371709)
         if not chl:
-            print('didnt find log channel for antispam')
-            return
+            raise ValueError('didnt find detail-log channel for antispam')
+
         tracker = self.reputations[msg.author]
 
         embed_data = {
             "type"       : "rich",
-            "title"      : f"AntiSpam Flagged `{msg.author.name}` | Score: `{round(tracker._score, 5)}`",
+            "title"      : f"AntiSpam Logged `{msg.author.name}` | Score: `{round(tracker._score, 5)}`",
             "description": log,
             "color"      : 16711680
         }
 
         embed_obj = Embed.from_dict(embed_data)
-        await chl.send(embed=embed_obj)
+        return await chl.send(embed=embed_obj)
+
+    async def flag_log(self, reference: Message):
+        chl = self.bot.get_channel(916270962066984970)
+        if not chl:
+            raise ValueError('didnt find flag-log channel for antispam')
+
+        embed_data = {
+            "type"       : "rich",
+            "title"      : "AntiSpam Flagged Spamming Event",
+            "description": reference.jump_url,
+            "color"      : 16711680
+        }
+
+        embed_obj = Embed.from_dict(embed_data)
+        return await chl.send(embed=embed_obj)
 
 
 def sigmoidy(x, in_max=1., out_max=1.):

@@ -2,18 +2,13 @@ from os import getenv
 
 import discord
 
-import botcord
-
-
-class SocietyBot(botcord.BotClient):
-    def __init__(self, **options):
-        super().__init__(**options)
+from botcord import BotClient
 
 
 def init():
-    CLIENT = SocietyBot(status=discord.Status("online"),
-                        activity=discord.Activity(name="a Society | *help", type=3))
-    CLIENT.run(getenv("TOKEN2"))
+    client = BotClient(status=discord.Status("online"),
+                       activity=discord.Activity(name="a Society | *help", type=3))
+    client.run(getenv("TOKEN2"))
 
 
 init()
