@@ -103,5 +103,5 @@ class Roaster(Cog):
         await ctx.reply('Loaded roasts from file')
 
 
-def setup(bot):
-    bot.add_cog(Roaster(bot))
+async def setup(bot):
+    await bot.add_cog(Roaster(bot))

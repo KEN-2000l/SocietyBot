@@ -9,4 +9,19 @@ bot:
     prefix:
 
 ext:
-  - 
+    adv_replies:
+        enabled: false
+    colorroles:
+        enabled: false
+    danked_memer:
+        enabled: false
+    messagehook:
+        enabled: false
+    mod_utils:
+        enabled: false
+    nerd_utils:
+        enabled: false
+    reactomatic:
+        enabled: false
+    welcomer:
+        enabled: false

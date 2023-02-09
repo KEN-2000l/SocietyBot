@@ -39,5 +39,5 @@ class KeepRoles(Cog):
             pass
 
 
-def setup(bot: 'BotClient'):
-    bot.add_cog(KeepRoles(bot))
+async def setup(bot: 'BotClient'):
+    await bot.add_cog(KeepRoles(bot))

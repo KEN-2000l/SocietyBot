@@ -66,5 +66,5 @@ class AdvInfo(Cog):
             await ctx.reply('Role not found (Only works with roles in THIS server).', delete_after=10)
 
 
-def setup(bot):
-    bot.add_cog(AdvInfo(bot))
+async def setup(bot):
+    await bot.add_cog(AdvInfo(bot))

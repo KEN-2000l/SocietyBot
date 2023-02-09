@@ -10,4 +10,5 @@ bot:
 
 ext:
     welcomer:
+        enabled: true
         welcome_channel: 859712351821103104

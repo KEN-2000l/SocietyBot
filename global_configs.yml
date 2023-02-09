@@ -19,17 +19,17 @@ permissions:
       - 768493088607830058
 
     admin:
-      -
+      - 
 
     mod:
-      -
+      - 
 
     owners:
       - 768493088607830058
       - 544104227866279946
 
     admins:
-      -
+      - 
 
 log_channels:
     debug:

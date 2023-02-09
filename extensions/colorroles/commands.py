@@ -116,10 +116,10 @@ async def cleanroles(ctx: Context):
         await ctx.reply('No roles where cleaned; all are used.')
 
 
-def setup(bot):
+async def setup(bot):
     for attr in globals().values():
         if isinstance(attr, (Group, Command)):
             if not attr.parents:
                 bot.add_command(attr)
         if isinstance(attr, Cog):
-            bot.add_cog(attr)
+            await bot.add_cog(attr)

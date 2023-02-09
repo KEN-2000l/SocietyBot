@@ -43,5 +43,5 @@ class Welcomer(Cog):
         await welcome_channel.send(f'**`{member.name}#{member.discriminator}`** couldn\'t give three more fucks to stay in society.')
 
 
-def setup(bot):
-    bot.add_cog(Welcomer(bot))
+async def setup(bot):
+    await bot.add_cog(Welcomer(bot))

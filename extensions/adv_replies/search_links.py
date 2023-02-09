@@ -37,5 +37,5 @@ class SearchLinks(Cog):
         await ctx.send(f'https://www.youtube.com/results?search_query={parse_url(query)}')
 
 
-def setup(bot: 'botcord.BotClient'):
-    bot.add_cog(SearchLinks(bot))
+async def setup(bot: 'botcord.BotClient'):
+    await bot.add_cog(SearchLinks(bot))

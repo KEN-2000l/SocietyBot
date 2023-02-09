@@ -29,5 +29,5 @@ class NerdUtils(Cog):
         await ctx.reply('Finished Scan.')
 
 
-def setup(bot):
-    bot.add_cog(NerdUtils(bot))
+async def setup(bot):
+    await bot.add_cog(NerdUtils(bot))

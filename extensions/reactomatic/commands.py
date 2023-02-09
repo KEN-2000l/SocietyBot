@@ -6,7 +6,7 @@ from discord.utils import get
 from botcord import log, contain_word
 
 
-def setup(bot):
+async def setup(bot):
     async def react(message: Message, reaction: Union[int, str, Emoji]):
         try:
             if isinstance(reaction, int):
