@@ -3,8 +3,8 @@ from asyncio import TimeoutError
 from typing import List, Optional, TYPE_CHECKING, Tuple, Union
 
 from discord import Message
-from discord.ext.commands import Cog
 
+from botcord.ext.commands import Cog
 from botcord.functions import log
 
 if TYPE_CHECKING:
@@ -18,7 +18,7 @@ def is_bj_message(message: Message) -> bool:
         return False
     try:
         embed = message.embeds[0].to_dict()
-        if re.findall(r'(?<=\[`. )(\d|10|J|Q|K|A)(?=`\])', embed['fields'][0]['value']):
+        if re.findall(r'(?<=\[`. )(\d|10|J|Q|K|A)(?=`])', embed['fields'][0]['value']):
             return True
     except (KeyError, ValueError, IndexError):
         pass
@@ -26,7 +26,7 @@ def is_bj_message(message: Message) -> bool:
 
 
 def parse_cards(string: str) -> List[Optional[Union[str, int]]]:
-    results: List[Union[str, int]] = re.findall(r'(?<=\[`. )(\d|10|J|Q|K|A)(?=`\])', string)
+    results: List[Union[str, int]] = re.findall(r'(?<=\[`. )(\d|10|J|Q|K|A)(?=`])', string)
     if not results:
         log(f'Error in bj card parsing: No card found: \n{string}', tag='Error')
         return []
@@ -98,8 +98,8 @@ async def bj_assist(message: Message, response: Message = None):
     dealer_top = dealer_cards[0]
     msg = f'Your total: **`{"A+" + str(user_total - 11) if user_soft else user_total}`** | Dealer top card: **`{dealer_top}`** \nYou should: **{best_move(user_total, user_soft, dealer_top)}**'
     if response:
-        await response.edit(content=msg)
-        return response
+        edited = await response.edit(content=msg)
+        return edited if edited else response
     else:
         return await message.channel.send(msg)
 
@@ -125,5 +125,5 @@ class BlackJackAssist(Cog):
                     break
 
 
-def setup(bot: 'BotClient'):
-    bot.add_cog(BlackJackAssist(bot))
+async def setup(bot: 'BotClient'):
+    await bot.add_cog(BlackJackAssist(bot))

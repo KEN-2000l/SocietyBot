@@ -1,13 +1,13 @@
 from typing import Union
 
-from discord import Forbidden, NotFound, Message, InvalidArgument, Emoji
+from discord import Forbidden, NotFound, Message, Emoji
 from discord.utils import get
 
 from botcord import log, contain_word
 
 
 def setup(bot):
-    async def react(message, reaction: Union[int, str, Emoji]):
+    async def react(message: Message, reaction: Union[int, str, Emoji]):
         try:
             if isinstance(reaction, int):
                 reaction = get(bot.emojis, id=reaction)
@@ -16,7 +16,7 @@ def setup(bot):
             pass
         except NotFound:
             log(f'Reaction {reaction} was not found (in server {message.guild})', tag='Warning')
-        except InvalidArgument:
+        except TypeError:
             log(f'Tried to react with Invalid emoji: {reaction}', tag='Warning')
 
     @bot.listen()

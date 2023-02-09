@@ -4,8 +4,7 @@ import discord
 from discord import Member, Guild, Role
 from discord.errors import Forbidden
 from discord.ext import commands
-from discord.ext.commands import Context, BucketType
-from discord.ext.commands.core import Cog, Group, Command
+from discord.ext.commands import Context, BucketType, Cog, Group, Command
 from typing import Optional, Union
 
 

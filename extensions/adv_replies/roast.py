@@ -3,7 +3,7 @@ from random import choice
 from discord import Member
 from discord.ext.commands import Context, Greedy, check_any, group
 
-from botcord.checks import guild_owner_or_perms, has_global_perms
+from botcord.ext.commands.checks import guild_owner_or_perms, has_global_perms
 from botcord.ext.commands import Cog
 from botcord.functions import batch
 
@@ -11,19 +11,19 @@ from botcord.functions import batch
 class Roaster(Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.config_init(__file__)
+        self.init_local_config(__file__)
 
     @property
     def blocked(self) -> list:
-        if 'blocked' not in self.config:
-            self.config['blocked'] = []
-        return self.config['blocked']
+        if 'blocked' not in self.local_config:
+            self.local_config['blocked'] = []
+        return self.local_config['blocked']
 
     @property
     def roasts(self) -> list:
-        if 'roasts' not in self.config:
-            self.config['roasts'] = []
-        return self.config['roasts']
+        if 'roasts' not in self.local_config:
+            self.local_config['roasts'] = []
+        return self.local_config['roasts']
 
     def add_roast(self, roast: str):
         self.roasts.append(roast)
@@ -85,21 +85,21 @@ class Roaster(Cog):
     @check_any(guild_owner_or_perms(administrator=True), has_global_perms(owner=True))
     async def reload(self, ctx: Context):
         """Saves/Reloads roasts from disk file-save, Admin-only"""
-        self.refresh_config()
+        self.refresh_local_config()
         await ctx.reply('Refreshed Roasts from File.')
 
     @roast.command()
     @check_any(guild_owner_or_perms(administrator=True), has_global_perms(owner=True))
     async def save(self, ctx: Context):
         """Overwrites file data with roasts in memory, Admin-only"""
-        self.save_config()
+        self.save_local_config()
         await ctx.reply('Saved roasts to file')
 
     @roast.command()
     @check_any(guild_owner_or_perms(administrator=True), has_global_perms(owner=True))
     async def load(self, ctx: Context):
         """Overwrites memory data with roasts in file, Admin-only"""
-        self.load_config()
+        self.load_local_config()
         await ctx.reply('Loaded roasts from file')
 
 
