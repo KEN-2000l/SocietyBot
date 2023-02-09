@@ -711,7 +711,7 @@ class BotClient(commands.Bot):
         self._connection.clear()
 
     async def __aenter__(self):
-        log('Performing Asynchonous Initialization...', tag='INIT')
+        log('Performing Asynchronous Initialization...', tag='INIT')
 
         await self._async_setup_hook()
         with protect():

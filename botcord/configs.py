@@ -100,7 +100,7 @@ def save_guild_config(config: ConfigDict, guild_id: int, *, guild_dir: str = 'co
 
 
 def default_global() -> ConfigDict:
-    """Returns defailt Global Config. Caches data from first call."""
+    """Returns default Global Config. Caches data from first call."""
     global _default_global
     if _default_global is None:
         try:

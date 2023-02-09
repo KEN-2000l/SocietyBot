@@ -8,7 +8,7 @@ from typing import Any, AnyStr, Iterable, Optional
 
 from discord import Message
 
-from .types import FileDescripor, SupportsWrite
+from .types import FileDescriptor, SupportsWrite
 
 
 def removeprefix(string: str, prefix: str | Iterable[str]) -> str:
@@ -83,13 +83,13 @@ def clean_return(string: str) -> str:
     return str(string).replace('\r\n', '\n').replace('\r', '\n').replace(' \n', '\n').strip()
 
 
-def load_list(filepath: FileDescripor) -> list[str]:
+def load_list(filepath: FileDescriptor) -> list[str]:
     """loads a list of strings from a text file, items delimited by newlines"""
     with open(filepath, mode='r', encoding='utf-8') as file:
         return file.read().splitlines()
 
 
-def save_list(filepath: FileDescripor, array: Iterable[AnyStr]):
+def save_list(filepath: FileDescriptor, array: Iterable[AnyStr]):
     """saves a list of items as strings to a text file, delimited by newlines"""
     with open(filepath, mode='w', encoding='utf-8') as file:
         for item in array:
