@@ -13,3 +13,17 @@ ext:
     welcomer:
         enabled: true
         welcome_channel: 888009787810402327
+    adv_replies:
+        enabled: true
+    colorroles:
+        enabled: true
+    danked_memer:
+        enabled: true
+    messagehook:
+        enabled: true
+    mod_utils:
+        enabled: true
+    nerd_utils:
+        enabled: true
+    reactomatic:
+        enabled: true

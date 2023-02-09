@@ -11,18 +11,18 @@ bot:
 
 ext:
     adv_replies:
-        enabled: false
+        enabled: true
     colorroles:
-        enabled: false
+        enabled: true
     danked_memer:
-        enabled: false
+        enabled: true
     messagehook:
-        enabled: false
+        enabled: true
     mod_utils:
-        enabled: false
+        enabled: true
     nerd_utils:
-        enabled: false
+        enabled: true
     reactomatic:
-        enabled: false
+        enabled: true
     welcomer:
-        enabled: false
+        enabled: true
