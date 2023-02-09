@@ -32,7 +32,12 @@ def load_configs(*, global_path: str = 'global_configs.yml',
         with open(global_config_path, encoding='UTF-8') as wfile:
             wloaded = YAML_rw.load(wfile)
             if wloaded:
-                recursive_update(global_configs, wloaded)
+                try:
+                    recursive_update(global_configs, wloaded)
+                except TypeError:
+                    log(f'Incorrect data format in global config file. Using default.', tag='Warning')
+                    global_configs = default_global()  # reset to default (in case of partial overwrite)
+
     except FileNotFoundError:
         log(f'Did not find Global Configuration File at {global_config_path}; using Defaults.', tag='Info')
         global_configs = default_global()
@@ -50,7 +55,11 @@ def load_configs(*, global_path: str = 'global_configs.yml',
             wloaded = YAML_rw.load(wfile)
             if not wloaded:
                 continue
-            recursive_update(config_file, wloaded)
+            try:
+                recursive_update(config_file, wloaded)
+            except TypeError:
+                log(f'Incorrect data format in config file: {file}. Using default.', tag='Warning')
+                config_file = default_guild()  # reset to default (in case of partial overwrite)
 
         guild_id = to_int(config_file['guild']['id'])
         if guild_id is None:
@@ -76,7 +85,13 @@ def new_guild_config(guild_id: int,
     config = default_guild()
     recursive_update(config, {'guild': {'id': guild_id}})
     if initial_config is not None:
-        recursive_update(config, initial_config)
+        try:
+            recursive_update(config, initial_config)
+        except TypeError:
+            log(f'Incorrect data format in initial config while creating new config for guild {guild_id}. '
+                f'Using default.', tag='Warning')
+            config = default_guild()
+            recursive_update(config, {'guild': {'id': guild_id}})
     try:
         with open(f'{guild_configs_dir}{guild_id}.yml', mode='x', encoding='UTF-8') as file:
             YAML_rw.dump(config, file)
