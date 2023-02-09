@@ -2,13 +2,29 @@
 
 guild:
     id: 770493700883087361
-    invite: https://discord.gg/QU6Wk2Bn
+    invite:
     name: society
+
 
 bot:
     prefix: '*'
+
 
 ext:
     welcomer:
         enabled: true
         welcome_channel: 859712351821103104
+    adv_replies:
+        enabled: false
+    colorroles:
+        enabled: false
+    danked_memer:
+        enabled: false
+    messagehook:
+        enabled: false
+    mod_utils:
+        enabled: false
+    nerd_utils:
+        enabled: false
+    reactomatic:
+        enabled: false

@@ -1,0 +1,11 @@
+# Guild-specific Config file
+
+guild:
+    id: 717010362234568764
+    invite:
+    name:
+
+bot:
+    prefix:
+
+ext: {}
